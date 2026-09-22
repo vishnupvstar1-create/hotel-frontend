@@ -5,7 +5,7 @@ import AppRoutes from './routes/AppRoutes';
 import logoImg from './assets/grand.png';
 import { LayoutDashboard, BedDouble, UtensilsCrossed, LayoutGrid, Store, Users, CalendarDays,ReceiptText } from 'lucide-react';
 
-const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API = import.meta.env.VITE_API_BASE_URL || 'https://grand-resorts-api.onrender.com/api';
 
 export default function App() {
   const [bookings, setBookings] = useState([]);
