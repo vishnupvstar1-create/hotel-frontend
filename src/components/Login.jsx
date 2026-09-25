@@ -44,7 +44,7 @@ export default function Login({ API }) {
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-8 space-y-6">
         <div className="text-center flex flex-col items-center">
           <div className="bg-slate-900 p-3 rounded-xl mb-4">
-            <img src={logoImg} alt="Logo" className="h-10 w-auto object-contain" />
+            <img src={logoImg} alt="Logo" className="h-10 w-auto object-contain bg-white" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Staff Portal</h2>
           <p className="text-sm text-gray-500 mt-1">Sign in to manage Grand Resort</p>
