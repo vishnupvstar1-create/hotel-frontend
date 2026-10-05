@@ -99,7 +99,14 @@ const [view, setView] = useState('active'); // 'active' | 'reserved' | 'history
                     <span className="text-gray-400">to</span> {new Date(b.checkOutDate).toLocaleDateString()}
                   </td>
                   <td className="py-4 text-sm font-medium">
-                    {view === 'active' ? <span className="text-green-600">₹{b.advancePaid}</span> : <span className="text-gray-500 bg-gray-100 px-3 py-1 rounded-full text-xs">Checked Out</span>}
+                    {/* FIX 1: Properly handle all 3 views for the status column */}
+                    {view === 'active' ? (
+                      <span className="text-green-600">₹{b.advancePaid}</span>
+                    ) : view === 'reserved' ? (
+                      <span className="text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full text-xs">Reserved</span>
+                    ) : (
+                      <span className="text-gray-500 bg-gray-100 px-3 py-1 rounded-full text-xs">Checked Out</span>
+                    )}
                   </td>
                   <td className="py-4 text-right">
                     <div className="flex justify-end gap-2">
@@ -107,6 +114,7 @@ const [view, setView] = useState('active'); // 'active' | 'reserved' | 'history
                         <Receipt size={16} /> Folio
                       </button>
 
+                      {/* FIX 2: Show Edit button for Reserved guests, Checkout for Active guests, and Settled for History */}
                       {b.status === 'Checked-In' ? (
                         <>
                           <button onClick={() => setEditBooking(b)} className="text-sm bg-gray-100 text-gray-700 px-3 py-2 rounded-lg font-semibold hover:bg-gray-200 flex items-center gap-1 transition-colors">
@@ -116,6 +124,10 @@ const [view, setView] = useState('active'); // 'active' | 'reserved' | 'history
                             Checkout
                           </button>
                         </>
+                      ) : b.status === 'Reserved' ? (
+                        <button onClick={() => setEditBooking(b)} className="text-sm bg-gray-100 text-gray-700 px-3 py-2 rounded-lg font-semibold hover:bg-gray-200 flex items-center gap-1 transition-colors">
+                          <Edit size={16} /> Edit / Check-In
+                        </button>
                       ) : (
                         <span className="text-sm text-emerald-600 font-bold bg-emerald-50 px-4 py-2 rounded-lg ml-2 border border-emerald-100">
                           Settled

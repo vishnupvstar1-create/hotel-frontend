@@ -11,9 +11,12 @@ export default function EditBookingModal({ booking, onClose, onSuccess, API }) {
     guestName: booking.guestName,
     phone: booking.phone,
     email: booking.email || '', 
+    roomType: booking.roomType || 'Normal',
+    roomNumber: booking.roomNumber || '',
     checkInDate: formatDate(booking.checkInDate),
     checkOutDate: formatDate(booking.checkOutDate),
-    advancePaid: booking.advancePaid
+    advancePaid: booking.advancePaid,
+    status: booking.status
   });
   
   const [errors, setErrors] = useState({ phone: '', email: '' });
@@ -47,13 +50,17 @@ export default function EditBookingModal({ booking, onClose, onSuccess, API }) {
     e.preventDefault();
     if (errors.phone || errors.email) return;
 
+    const token = localStorage.getItem('token');
     setLoading(true);
+    
     try {
-      await axios.put(`${API}/bookings/${booking._id}`, form);
+      await axios.put(`${API}/bookings/${booking._id}`, form, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setToastMsg("Booking updated successfully!");
       setTimeout(() => {
         onSuccess();
-      }, 1500); // Give the user 1.5 seconds to see the toast before closing
+      }, 1500);
     } catch (error) {
       setApiError(error.response?.data?.error || "Failed to update booking. Please try again.");
     } finally {
@@ -65,53 +72,108 @@ export default function EditBookingModal({ booking, onClose, onSuccess, API }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden relative">
-        <div className="bg-slate-900 p-5 flex justify-between items-center text-white">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden relative max-h-[90vh] flex flex-col">
+        <div className="bg-slate-900 p-5 flex justify-between items-center text-white shrink-0">
           <div className="flex items-center gap-2">
             <Edit size={20} /> <h2 className="font-bold text-lg">Edit Guest Details</h2>
           </div>
           <button onClick={onClose} className="hover:bg-slate-700 p-1 rounded"><X size={20}/></button>
         </div>
 
-        <form onSubmit={submitEdit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Guest Name *</label>
-            <input required type="text" className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500" value={form.guestName} onChange={e => setForm({...form, guestName: e.target.value})} />
-          </div>
-          
-          <div className="flex gap-4">
-            <div className="w-1/2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
-              <input required type="tel" className={`w-full border p-2.5 rounded-lg focus:ring-2 focus:outline-none ${errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'}`} value={form.phone} onChange={handlePhoneChange} />
-              {errors.phone && <p className="text-red-500 text-xs mt-1 font-medium">{errors.phone}</p>}
+        <div className="overflow-y-auto overflow-x-hidden p-6 custom-scrollbar">
+          <form id="edit-form" onSubmit={submitEdit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Guest Name *</label>
+              <input required type="text" className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500" value={form.guestName} onChange={e => setForm({...form, guestName: e.target.value})} />
             </div>
-            <div className="w-1/2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" className={`w-full border p-2.5 rounded-lg focus:ring-2 focus:outline-none ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'}`} value={form.email} onChange={handleEmailChange} />
-              {errors.email && <p className="text-red-500 text-xs mt-1 font-medium">{errors.email}</p>}
+            
+            <div className="flex gap-4">
+              <div className="w-1/2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                <input required type="tel" className={`w-full border p-2.5 rounded-lg focus:ring-2 focus:outline-none ${errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'}`} value={form.phone} onChange={handlePhoneChange} />
+                {errors.phone && <p className="text-red-500 text-xs mt-1 font-medium">{errors.phone}</p>}
+              </div>
+              <div className="w-1/2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" className={`w-full border p-2.5 rounded-lg focus:ring-2 focus:outline-none ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-indigo-500'}`} value={form.email} onChange={handleEmailChange} />
+                {errors.email && <p className="text-red-500 text-xs mt-1 font-medium">{errors.email}</p>}
+              </div>
             </div>
-          </div>
 
-          <div className="flex gap-4">
-            <div className="w-1/2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Check-In</label>
-              <input required type="date" className="w-full border border-gray-300 p-2.5 rounded-lg" value={form.checkInDate} onChange={e => setForm({...form, checkInDate: e.target.value})} />
+            {/* <-- NEW ROW: Room Type and Room Number --> */}
+            <div className="flex gap-4">
+              {/* Room Type */}
+              <div className="w-1/2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Room Type</label>
+                <select 
+                  className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white" 
+                  value={form.roomType} 
+                  onChange={e => setForm({...form, roomType: e.target.value, roomNumber: ''})} 
+                >
+                  <option value="Normal">Normal</option>
+                  <option value="Deluxe">Deluxe</option>
+                  <option value="Super Luxury">Super Luxury</option>
+                </select>
+              </div>
+
+              {/* Dynamic Room Number */}
+              <div className="w-1/2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Room Number *</label>
+                <select 
+                  required
+                  className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white" 
+                  value={form.roomNumber} 
+                  onChange={e => setForm({...form, roomNumber: Number(e.target.value)})}
+                >
+                  <option value="" disabled>Select a room</option>
+                  
+                  {form.roomType === 'Normal' && [301, 302, 303, 304, 305, 306, 307, 308, 309, 310].map(num => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                  
+                  {form.roomType === 'Deluxe' && [201, 202, 203, 204, 205, 206, 207, 208, 209, 210].map(num => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                  
+                  {form.roomType === 'Super Luxury' && [101, 102, 103, 104, 105].map(num => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="w-1/2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Check-Out</label>
-              <input required type="date" className="w-full border border-gray-300 p-2.5 rounded-lg" value={form.checkOutDate} onChange={e => setForm({...form, checkOutDate: e.target.value})} />
+
+            <div className="flex gap-4">
+              <div className="w-1/2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Check-In</label>
+                <input required type="date" className="w-full border border-gray-300 p-2.5 rounded-lg" value={form.checkInDate} onChange={e => setForm({...form, checkInDate: e.target.value})} />
+              </div>
+              <div className="w-1/2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Check-Out</label>
+                <input required type="date" className="w-full border border-gray-300 p-2.5 rounded-lg" value={form.checkOutDate} onChange={e => setForm({...form, checkOutDate: e.target.value})} />
+              </div>
             </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Advance Paid (₹)</label>
-            <input type="number" min="0" onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }} className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500" value={form.advancePaid} onChange={e => setForm({...form, advancePaid: Number(e.target.value)})} />
-          </div>
-          
-          <button type="submit" disabled={isSubmitDisabled} className="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 mt-2 disabled:bg-indigo-400">
+            
+            <div className="flex gap-4">
+              <div className="w-1/2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Advance Paid (₹)</label>
+                <input type="number" min="0" onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }} className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500" value={form.advancePaid} onChange={e => setForm({...form, advancePaid: Number(e.target.value)})} />
+              </div>
+              <div className="w-1/2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white" value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+                  <option value="Reserved">Reserved</option>
+                  <option value="Checked-In">Checked-In</option>
+                </select>
+              </div>
+            </div>
+          </form>
+        </div>
+        
+        <div className="p-4 border-t border-gray-100 bg-gray-50 shrink-0">
+          <button form="edit-form" type="submit" disabled={isSubmitDisabled} className="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 disabled:bg-indigo-400">
             {loading ? 'Saving...' : 'Save Changes'}
           </button>
-        </form>
+        </div>
 
         <Toast message={toastMsg} onClose={() => setToastMsg('')} />
         <ErrorPopup error={apiError} onClose={() => setApiError('')} />
