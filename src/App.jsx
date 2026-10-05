@@ -5,7 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import axios from 'axios';
 import AppRoutes from './routes/AppRoutes';
 import logoImg from './assets/grand.png';
-import { LayoutDashboard, BedDouble, UtensilsCrossed, LayoutGrid, Store, Users, CalendarDays, ReceiptText, LogOut } from 'lucide-react';
+import { LayoutDashboard, BedDouble, UtensilsCrossed, LayoutGrid, Store, Users, CalendarDays, ReceiptText, LogOut ,UserPlus, KeyRound} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const API = import.meta.env.VITE_API_BASE_URL || 'https://grand-resorts-api.onrender.com/api';
@@ -26,7 +26,9 @@ function DashboardLayout({ bookings, refresh, API }) {
     { path: '/rooms', icon: LayoutGrid, label: 'Room Overview' },
     { path: '/pos', icon: UtensilsCrossed, label: 'Service POS' },
     { path: '/restaurant', icon: Store, label: 'Ext. Checkout' },
-    { path: '/restaurant-sales', icon: ReceiptText, label: 'Ext. Sales' }
+    { path: '/restaurant-sales', icon: ReceiptText, label: 'Ext. Sales' },
+    { path: '/staff', icon: UserPlus, label: 'Add Staff' },
+    { path: '/settings', icon: KeyRound, label: 'Settings' }
   ];
 
   return (
