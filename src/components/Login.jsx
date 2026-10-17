@@ -29,6 +29,8 @@ export default function Login({ API }) {
 
       // Save the secure token to the device
       localStorage.setItem('token', data.token);
+      localStorage.setItem('userRole', data.role);
+      localStorage.setItem('username', data.username);
       
       // Redirect to the dashboard
       navigate('/');

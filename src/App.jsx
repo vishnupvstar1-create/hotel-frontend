@@ -5,7 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import axios from 'axios';
 import AppRoutes from './routes/AppRoutes';
 import logoImg from './assets/grand.png';
-import { LayoutDashboard, BedDouble, UtensilsCrossed, LayoutGrid, Store, Users, CalendarDays, ReceiptText, LogOut ,UserPlus, KeyRound} from 'lucide-react';
+import { LayoutDashboard, BedDouble, UtensilsCrossed, LayoutGrid, Store, Users, CalendarDays, ReceiptText, LogOut ,UserPlus, KeyRound, User} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const API = import.meta.env.VITE_API_BASE_URL || 'https://grand-resorts-api.onrender.com/api';
@@ -14,9 +14,13 @@ const API = import.meta.env.VITE_API_BASE_URL || 'https://grand-resorts-api.onre
 // This ensures the sidebar only loads when someone is actually logged in
 function DashboardLayout({ bookings, refresh, API }) {
   const navigate = useNavigate();
+  const userRole = localStorage.getItem('userRole');
+  const username = localStorage.getItem('username');
 
   const handleLogout = () => {
     localStorage.removeItem('token'); // Destroy the badge
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('username');
     navigate('/login'); // Kick them back to login
   };
   const navItems = [
@@ -27,9 +31,13 @@ function DashboardLayout({ bookings, refresh, API }) {
     { path: '/pos', icon: UtensilsCrossed, label: 'Service POS' },
     { path: '/restaurant', icon: Store, label: 'Ext. Checkout' },
     { path: '/restaurant-sales', icon: ReceiptText, label: 'Ext. Sales' },
-    { path: '/staff', icon: UserPlus, label: 'Add Staff' },
     { path: '/settings', icon: KeyRound, label: 'Settings' }
   ];
+
+if (userRole === 'manager') {
+    navItems.push({ path: '/staff', icon: UserPlus, label: 'Add Staff' });
+    navItems.push({ path: '/manage-rooms', icon: LayoutGrid, label: 'Manage Room' });
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-gray-900 overflow-hidden">
@@ -72,6 +80,21 @@ function DashboardLayout({ bookings, refresh, API }) {
           ))}
         </nav>
         <div className="p-2 md:p-4 border-t border-slate-800 mt-auto">
+          {/* --> NEW: User Profile Display */}
+          <div className="mb-4 flex flex-col md:flex-row items-center gap-2 md:gap-3 px-1 md:px-2">
+            <div className="hidden md:flex bg-slate-700 p-2 rounded-full text-indigo-400 shrink-0">
+              <User size={18} />
+            </div>
+            <div className="flex flex-col items-center md:items-start overflow-hidden w-full">
+              <span className="text-[11px] md:text-sm font-bold text-white truncate w-full text-center md:text-left">
+                {username || 'Staff Member'}
+              </span>
+              <span className="text-[9px] md:text-xs text-indigo-400 font-medium capitalize truncate w-full text-center md:text-left">
+                {userRole?.replace('-', ' ') || 'Role'}
+              </span>
+            </div>
+          </div>
+          {/* <-- END NEW */}
           <button 
             onClick={handleLogout}
             className="w-full flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 py-3 px-1 md:p-3 rounded-lg text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"

@@ -1,19 +1,49 @@
-import { useState } from 'react';
-import { AlertTriangle, User, Calendar, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { AlertTriangle, User, Calendar, LogOut, Globe } from 'lucide-react';
 
 export default function RoomOverview({ bookings }) {
   const [filter, setFilter] = useState('All');
+  const [rooms, setRooms] = useState([]); 
+  const [loading, setLoading] = useState(true);
 
-  // Master inventory (5 Super Luxury, 10 Deluxe, 10 Normal)
-  const roomInventory = [
-    ...Array.from({ length: 5 }, (_, i) => ({ number: 101 + i, type: 'Super Luxury' })),
-    ...Array.from({ length: 10 }, (_, i) => ({ number: 201 + i, type: 'Deluxe' })),
-    ...Array.from({ length: 10 }, (_, i) => ({ number: 301 + i, type: 'Normal' }))
-  ];
+  // 1. Fetch real inventory from MongoDB on load
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const response = await fetch('https://grand-resorts-api.onrender.com/api/rooms');
+        const data = await response.json();
+        setRooms(data);
+      } catch (error) {
+        console.error("Failed to fetch rooms", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRooms();
+  }, []);
+
+  // 2. Handle instant status updates (Available, Reserved, Occupied, Maintenance)
+  const handleStatusChange = async (roomId, newStatus) => {
+    try {
+      const response = await fetch(`https://grand-resorts-api.onrender.com/api/rooms/${roomId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (response.ok) {
+        setRooms(rooms.map(room => room._id === roomId ? { ...room, status: newStatus } : room));
+      }
+    } catch (error) {
+      console.error('Failed to update status', error);
+    }
+  };
 
   const displayedRooms = filter === 'All' 
-    ? roomInventory 
-    : roomInventory.filter(r => r.type === filter);
+    ? rooms 
+    : rooms.filter(r => r.roomType === filter);
+
+  if (loading) return <div className="p-10 text-center text-gray-500 font-bold">Loading live inventory...</div>;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -22,7 +52,7 @@ export default function RoomOverview({ bookings }) {
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Room Overview</h2>
-          <p className="text-sm text-gray-500">Live status of all 25 rooms</p>
+          <p className="text-sm text-gray-500">Live inventory and Next.js visibility control</p>
         </div>
         <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto">
           {['All', 'Super Luxury', 'Deluxe', 'Normal'].map(type => (
@@ -41,38 +71,31 @@ export default function RoomOverview({ bookings }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {displayedRooms.map(room => {
           
-          // 1. Find if the room is currently occupied (Must be inside the map loop!)
-          const activeBooking = bookings.find(b => b.roomNumber === room.number && b.status === 'Checked-In');
+          const activeBooking = bookings.find(b => b.roomNumber === room.roomNumber && b.status === 'Checked-In');
           
-          // 2. Check if it is overdue
           let isOverdue = false;
           if (activeBooking) {
             const today = new Date();
             today.setHours(0,0,0,0);
             const checkOutDate = new Date(activeBooking.checkOutDate);
             checkOutDate.setHours(0,0,0,0);
-            
-            if (today > checkOutDate) {
-              isOverdue = true;
-            }
+            if (today > checkOutDate) isOverdue = true;
           }
 
-          // 3. Find if it's reserved for the future (but currently empty)
           const futureBooking = !activeBooking 
-            ? bookings.find(b => b.roomNumber === room.number && b.status === 'Reserved')
+            ? bookings.find(b => b.roomNumber === room.roomNumber && b.status === 'Reserved')
             : null;
 
           return (
-            <div key={room.number} className={`relative p-5 rounded-xl border-2 transition-all h-full flex flex-col ${
+            <div key={room._id} className={`relative p-5 rounded-xl border-2 transition-all h-full flex flex-col ${
               isOverdue ? 'border-red-500 bg-red-50' : 
               activeBooking ? 'border-indigo-500 bg-indigo-50' : 
               futureBooking ? 'border-amber-400 bg-amber-50' :
               'border-emerald-500 bg-emerald-50'
             }`}>
               
-              {/* Overdue Warning Badge */}
               {isOverdue && (
-                <div className="absolute -top-3 -right-3 bg-red-500 text-white p-2 rounded-full shadow-lg animate-pulse" title="Overdue for Checkout!">
+                <div className="absolute -top-3 -right-3 bg-red-500 text-white p-2 rounded-full shadow-lg animate-pulse">
                   <AlertTriangle size={18} />
                 </div>
               )}
@@ -80,27 +103,21 @@ export default function RoomOverview({ bookings }) {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className={`text-2xl font-black ${
-                    isOverdue ? 'text-red-700' :
-                    activeBooking ? 'text-indigo-700' : 
-                    futureBooking ? 'text-amber-700' :
-                    'text-emerald-700'
+                    isOverdue ? 'text-red-700' : activeBooking ? 'text-indigo-700' : futureBooking ? 'text-amber-700' : 'text-emerald-700'
                   }`}>
-                    {room.number}
+                    {room.roomNumber}
                   </h3>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{room.type}</p>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{room.roomType}</p>
                 </div>
                 <div className={`px-2 py-1 rounded text-[10px] font-bold tracking-wider ${
-                  isOverdue ? 'bg-red-200 text-red-800' :
-                  activeBooking ? 'bg-indigo-200 text-indigo-800' : 
-                  futureBooking ? 'bg-amber-200 text-amber-800' :
-                  'bg-emerald-200 text-emerald-800'
+                  isOverdue ? 'bg-red-200 text-red-800' : activeBooking ? 'bg-indigo-200 text-indigo-800' : futureBooking ? 'bg-amber-200 text-amber-800' : 'bg-emerald-200 text-emerald-800'
                 }`}>
                   {isOverdue ? 'OVERDUE' : activeBooking ? 'OCCUPIED' : futureBooking ? 'RESERVED' : 'VACANT'}
                 </div>
               </div>
 
-              {/* Room Details block (pushes to bottom) */}
-              <div className="mt-auto pt-4 border-t border-black/5">
+              {/* Guest / Booking Info */}
+              <div className="mt-auto pt-4 border-t border-black/5 mb-4">
                 {activeBooking ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
@@ -131,6 +148,26 @@ export default function RoomOverview({ bookings }) {
                   </div>
                 )}
               </div>
+
+              {/* Website Visibility Control with New Options */}
+              <div className="pt-3 border-t border-black/10">
+                <label className="flex items-center gap-1 text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                  <Globe size={12} /> Website Status
+                </label>
+                <select 
+                  value={room.status}
+                  onChange={(e) => handleStatusChange(room._id, e.target.value)}
+                  className={`w-full text-xs font-bold p-1.5 rounded border focus:outline-none ${
+                    room.status === 'Available' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-600 border-gray-300'
+                  }`}
+                >
+                  <option value="Available">Available (Visible)</option>
+                  <option value="Reserved">Reserved (Hidden)</option>
+                  <option value="Occupied">Occupied (Hidden)</option>
+                  <option value="Maintenance">Maintenance (Hidden)</option>
+                </select>
+              </div>
+
             </div>
           );
         })}

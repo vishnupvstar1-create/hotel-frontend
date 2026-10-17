@@ -8,6 +8,7 @@ import RestaurantSales from '../components/RestaurantSales';
 import ReservationCalendar from '../components/ReservationCalendar'; 
 import CreateStaff from '../components/CreateStaff';
 import ChangePassword from '../components/ChangePassword';
+import AddRoom from '../components/AddRoom';
 
 export default function AppRoutes({ bookings, refresh, API }) {
   return (
@@ -15,6 +16,7 @@ export default function AppRoutes({ bookings, refresh, API }) {
       <Route path="/" element={<BookingManager bookings={bookings} refresh={refresh} API={API} />} />
       <Route path="/guests" element={<GuestList bookings={bookings} refresh={refresh} API={API} />} />
       <Route path="/rooms" element={<RoomOverview bookings={bookings} />} />
+      <Route path="/manage-rooms" element={<AddRoom />} />
       <Route path="/pos" element={<ServicePOS bookings={bookings.filter(b => b.status === 'Checked-In')} API={API} />} />
       <Route path="/restaurant" element={<RestaurantPOS API={API} />} />
       <Route path="/restaurant-sales" element={<RestaurantSales API={API} />} />
